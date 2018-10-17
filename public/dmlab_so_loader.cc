@@ -24,10 +24,16 @@
 
 #include <dlfcn.h>
 #include <fcntl.h>
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#ifdef __APPLE__
+#  include <sys/socket.h>
+#  include <sys/uio.h>
+#else  // defined(__APPLE__)
+#  include <sys/sendfile.h>
+#endif  // defined(__APPLE__)
 
 #include <cerrno>
 #include <cstdio>
@@ -106,7 +112,12 @@ void close_handle(void* context) {
 ssize_t send_complete_file(int out_fd, int in_fd, off_t offset, ssize_t count) {
   ssize_t bytes_count = 0;
   while (bytes_count < count) {
-    ssize_t res = sendfile(out_fd, in_fd, &offset, count - bytes_count);
+#ifdef __APPLE__
+    off_t len = count - bytes_count;
+    int res = sendfile(out_fd, in_fd, offset, &len, nullptr, 0);
+#else  // defined(__APPLE__)
+    ssize_t res = sendfile(out_fd, in_fd, &offset, count - bytes_count), len = res;
+#endif  // defined(__APPLE__)
     if (res <= 0) {
       if (errno == EINTR || errno == EAGAIN) {
         continue;
@@ -114,7 +125,7 @@ ssize_t send_complete_file(int out_fd, int in_fd, off_t offset, ssize_t count) {
         return res;
       }
     }
-    bytes_count += res;
+    bytes_count += len;
   }
   return bytes_count;
 }
