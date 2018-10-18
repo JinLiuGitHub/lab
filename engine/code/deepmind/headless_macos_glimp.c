@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -25,7 +26,7 @@ void GLimp_Init(void) {
 
   // NOTE: in headless mode there is no GUI, hence output to console instead of message boxes
 
-  if (CGLChoosePixelFormat((CGLPixelFormatAttribute *)attribs, &pix, &npix) != kCGLNoError) {
+  if (CGLChoosePixelFormat((CGLPixelFormatAttribute*)attribs, &pix, &npix) != kCGLNoError) {
     // Sys_Error("GLimp_Init - choose pixel format error!\n");
     printf("GLimp_Init - choose pixel format error!\n");
     exit(1);
@@ -48,7 +49,7 @@ void GLimp_Init(void) {
 }
 
 void* GLimp_GetProcAddress(const char* func) {
-  return NULL;
+  return dlsym(RTLD_SELF, func);
 }
 
 void GLimp_Shutdown(void) {
